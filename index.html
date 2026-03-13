@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pact — Evidence for agent transactions</title>
+  <meta name="description" content="Cryptographic evidence and accountability for autonomous agent transactions. Agents act. Pact proves it." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #09090b;
+      --surface:  #111114;
+      --border:   #1e1e24;
+      --border2:  #2a2a33;
+      --text:     #f0f0f6;
+      --muted:    #71717a;
+      --muted2:   #52525b;
+      --accent:   #4f9ef8;
+      --accent2:  #93c5fd;
+      --danger:   #f87171;
+      --radius:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(9,9,11,0.85);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem; font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 0.85rem; color: var(--muted); transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      font-size: 0.82rem; font-weight: 600;
+      background: var(--accent); color: #000;
+      padding: 7px 16px; border-radius: 6px;
+      transition: opacity 0.15s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+    @media(max-width: 640px) { .nav-links { display: none; } }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse at center, rgba(79,158,248,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem; color: var(--accent);
+      background: rgba(79,158,248,0.08);
+      border: 1px solid rgba(79,158,248,0.2);
+      padding: 4px 12px; border-radius: 999px;
+      margin-bottom: 28px;
+    }
+    .hero-eyebrow::before { content: '●'; font-size: 0.5rem; }
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+    h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 1.1rem; color: var(--muted);
+      max-width: 500px; margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: #000;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 11px 24px; border-radius: 8px;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      font-weight: 500; font-size: 0.9rem;
+      padding: 11px 24px; border-radius: 8px;
+      border: 1px solid var(--border2);
+      transition: border-color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--muted2); }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── PROBLEM STRIP ── */
+    .problem-strip {
+      padding: 64px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .strip-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      text-align: center; margin-bottom: 40px;
+    }
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    }
+    @media(max-width: 640px) { .problem-grid { grid-template-columns: 1fr; } }
+    .problem-cell {
+      background: var(--surface); padding: 32px 28px;
+    }
+    .problem-cell .icon { font-size: 1.4rem; margin-bottom: 14px; }
+    .problem-cell h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .problem-cell p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+    .strike { text-decoration: line-through; color: var(--muted2); }
+
+    /* ── PIPELINE ── */
+    .pipeline { padding: 96px 0; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    .section-header h2 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.03em; }
+    .section-header p { color: var(--muted); margin-top: 12px; font-size: 0.95rem; }
+
+    .pipeline-track {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; flex-wrap: wrap; gap: 2px;
+    }
+    .pipeline-step {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 20px;
+      text-align: center; min-width: 110px;
+    }
+    .pipeline-step .step-icon { font-size: 1.2rem; margin-bottom: 6px; }
+    .pipeline-step .step-name { font-size: 0.78rem; font-weight: 600; }
+    .pipeline-step .step-sub { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+    .pipeline-arrow {
+      color: var(--muted2); font-size: 1.2rem; padding: 0 4px;
+      flex-shrink: 0;
+    }
+    .pipeline-highlight { border-color: rgba(79,158,248,0.3); background: rgba(79,158,248,0.05); }
+    .pipeline-highlight .step-name { color: var(--accent); }
+
+    /* ── ARTIFACTS ── */
+    .artifacts { padding: 0 0 96px; }
+    .artifact-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .artifact-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px 20px;
+      transition: border-color 0.15s;
+    }
+    .artifact-card:hover { border-color: var(--border2); }
+    .artifact-icon { font-size: 1.5rem; margin-bottom: 12px; }
+    .artifact-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+    .artifact-card p { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── WHY ── */
+    .why { padding: 0 0 96px; border-top: 1px solid var(--border); padding-top: 96px; }
+    .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    @media(max-width: 768px) { .why-grid { grid-template-columns: 1fr; } }
+    .why-card {
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 28px;
+    }
+    .why-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--muted2);
+      margin-bottom: 16px;
+    }
+    .why-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; }
+    .why-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+
+    /* ── USE CASES ── */
+    .usecases { padding: 0 0 96px; }
+    .usecase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media(max-width: 768px) { .usecase-grid { grid-template-columns: 1fr; } }
+    .usecase-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; position: relative; overflow: hidden;
+    }
+    .usecase-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .uc-success::before { background: var(--accent); }
+    .uc-abort::before { background: var(--danger); }
+    .uc-timeout::before { background: #f59e0b; }
+    .usecase-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; font-weight: 500;
+      padding: 2px 8px; border-radius: 4px;
+      display: inline-block; margin-bottom: 14px;
+    }
+    .tag-success { background: rgba(79,158,248,0.1); color: var(--accent); }
+    .tag-abort { background: rgba(248,113,113,0.1); color: var(--danger); }
+    .tag-timeout { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .usecase-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+    .usecase-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+    .dbl-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--muted2);
+    }
+    .dbl-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .dbl-nofault { color: var(--accent); }
+    .dbl-responsible { color: var(--danger); }
+
+    /* ── PILLARS (rail agnostic, one side, neutral, reputation) ── */
+    .pillars { padding: 0 0 96px; border-top: 1px solid var(--border); padding-top: 96px; }
+    .pillars-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    @media(max-width: 768px) { .pillars-grid { grid-template-columns: 1fr; } }
+    .pillar-card {
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 28px;
+    }
+    .pillar-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+    .pillar-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+
+    /* ── QUICKSTART ── */
+    .quickstart {
+      padding: 0 0 96px;
+    }
+    .code-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      max-width: 640px; margin: 0 auto;
+    }
+    .code-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-bottom: 1px solid var(--border);
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--border2); }
+    .code-label { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--muted2); }
+    .code-body { padding: 24px 28px; }
+    .code-body pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem; line-height: 1.9;
+      color: var(--text);
+    }
+    .code-comment { color: var(--muted2); }
+    .code-accent { color: var(--accent); }
+    .code-blue { color: var(--accent2); }
+    .code-link {
+      display: block; text-align: center;
+      margin-top: 20px; font-size: 0.82rem;
+      color: var(--accent); transition: opacity 0.15s;
+    }
+    .code-link:hover { opacity: 0.75; }
+
+    /* ── NOT STRIP ── */
+    .not-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 0; margin-bottom: 96px;
+    }
+    .not-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 640px;
+      margin: 0 auto;
+      align-items: start;
+      text-align: left;
+    }
+    @media(max-width: 640px) { .not-inner { grid-template-columns: 1fr; } }
+    .not-col { display: flex; flex-direction: column; gap: 12px; }
+    .not-col-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted2); margin-bottom: 4px; }
+    .not-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+    .not-list li { display: flex; align-items: center; gap: 10px; }
+    .not-x { color: var(--muted2); font-size: 0.75rem; flex-shrink: 0; }
+    .not-is { font-size: 0.95rem; color: var(--accent); font-weight: 500; line-height: 1.5; }
+
+    /* ── CTA ── */
+    .cta-section {
+      padding: 80px 0 96px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .cta-section h2 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 16px; }
+    .cta-section p { color: var(--muted); font-size: 0.95rem; margin-bottom: 36px; }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── PARTNERS ── */
+    .partners { padding: 0 0 96px; border-top: 1px solid var(--border); padding-top: 96px; }
+    .partner-types {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      margin-bottom: 64px;
+    }
+    @media(max-width: 768px) { .partner-types { grid-template-columns: 1fr; } }
+    .partner-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      transition: border-color 0.15s;
+    }
+    .partner-card:hover { border-color: var(--border2); }
+    .partner-icon { font-size: 1.5rem; margin-bottom: 12px; }
+    .partner-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+    .partner-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.65; }
+
+    .partner-cta-block {
+      border: 1px solid var(--border2); border-radius: 16px;
+      background: var(--surface); overflow: hidden;
+    }
+    .partner-cta-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+    @media(max-width: 768px) { .partner-cta-inner { grid-template-columns: 1fr; } }
+    .partner-cta-left {
+      padding: 48px 40px; border-right: 1px solid var(--border);
+    }
+    @media(max-width: 768px) { .partner-cta-left { border-right: none; border-bottom: 1px solid var(--border); } }
+    .partner-cta-left h3 {
+      font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
+      line-height: 1.3; margin-bottom: 14px;
+    }
+    .partner-cta-left > p { font-size: 0.88rem; color: var(--muted); line-height: 1.75; margin-bottom: 24px; }
+    .partner-perks { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .partner-perks li { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+    .partner-perks li span { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+    .partner-cta-right { padding: 48px 40px; }
+    .partner-form { display: flex; flex-direction: column; gap: 12px; }
+    .pf-group input, .pf-group select, .pf-group textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 7px; padding: 11px 14px;
+      font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text);
+      outline: none; transition: border-color 0.15s;
+    }
+    .pf-group input:focus, .pf-group select:focus, .pf-group textarea:focus { border-color: var(--accent); }
+    .pf-group select option { background: var(--bg); }
+    .pf-group textarea { resize: vertical; }
+    .partner-form button {
+      background: var(--accent); color: #000;
+      font-weight: 700; font-size: 0.88rem;
+      font-family: 'Inter', sans-serif;
+      padding: 12px 20px; border-radius: 7px; border: none;
+      cursor: pointer; transition: opacity 0.15s; text-align: center;
+    }
+    .partner-form button:hover { opacity: 0.85; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+    }
+    .footer-inner {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--muted2); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 0.8rem; color: var(--muted); transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="logo">pact<span>_</span></a>
+      <div class="nav-links">
+        <a href="#how">Protocol</a>
+        <a href="#artifacts">Artifacts</a>
+        <a href="#quickstart">Quickstart</a>
+        <a href="#partners">Partners</a>
+        <a href="https://github.com/pact-protocol" target="_blank">GitHub ↗</a>
+      </div>
+      <a href="https://github.com/pact-protocol" target="_blank" class="nav-cta">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Evidence & accountability for agent transactions</div>
+    <h1>Agents act.<br><em>Pact proves it.</em></h1>
+    <p class="hero-sub">A layer on the ACTIS standard: evidence bundles, offline verification, and the Evidence Viewer. Cryptographic, insurer-grade.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/pact-protocol" target="_blank" class="btn-primary">View on GitHub</a>
+      <a href="#how" class="btn-ghost">See how it works</a>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem-strip">
+  <div class="container">
+    <div class="strip-label">Without Pact</div>
+    <div class="problem-grid">
+      <div class="problem-cell">
+        <div class="icon">📋</div>
+        <h3 class="strike">Logs</h3>
+        <p>Tamperable. Not portable. Not evidence. They prove something happened, not what it meant.</p>
+      </div>
+      <div class="problem-cell">
+        <div class="icon">⚖️</div>
+        <h3 class="strike">Blame</h3>
+        <p>When an agent transaction fails, responsibility is unclear. Disputes require guesswork and arbitration.</p>
+      </div>
+      <div class="problem-cell">
+        <div class="icon">🏦</div>
+        <h3 class="strike">Insurance & Audit</h3>
+        <p>Without sealed, replayable evidence, legal review and insurer-grade reporting are impossible.</p>
+      </div>
+    </div>
+    <div class="strip-label" style="margin-top: 48px;">With Pact</div>
+    <div class="problem-grid" style="margin-top: 0;">
+      <div class="problem-cell" style="border: 1px solid rgba(79,158,248,0.2); background: rgba(79,158,248,0.03);">
+        <div class="icon">📋</div>
+        <h3 style="color: var(--accent);">Sealed evidence</h3>
+        <p>Tamper-evident bundles. Portable. Replayable. They prove what happened and what it meant.</p>
+      </div>
+      <div class="problem-cell" style="border: 1px solid rgba(79,158,248,0.2); background: rgba(79,158,248,0.03);">
+        <div class="icon">⚖️</div>
+        <h3 style="color: var(--accent);">Clear blame</h3>
+        <p>Default Blame Logic assigns responsibility deterministically. No guesswork, no arbitration loop.</p>
+      </div>
+      <div class="problem-cell" style="border: 1px solid rgba(79,158,248,0.2); background: rgba(79,158,248,0.03);">
+        <div class="icon">🏦</div>
+        <h3 style="color: var(--accent);">Insurer-grade</h3>
+        <p>Sealed, replayable evidence. Legal review and insurer-grade reporting out of the box.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="pipeline" id="how">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">How it works</div>
+      <h2>Runtime creates. Pact judges.</h2>
+      <p>Two clean layers. Agents emit signed transcripts. The verifier processes them offline.</p>
+    </div>
+    <div class="pipeline-track">
+      <div class="pipeline-step">
+        <div class="step-icon">🤝</div>
+        <div class="step-name">Intent</div>
+        <div class="step-sub">Agent initiates</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">💬</div>
+        <div class="step-name">Negotiate</div>
+        <div class="step-sub">Signed rounds</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">✅</div>
+        <div class="step-name">Settle</div>
+        <div class="step-sub">Hash-linked</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step pipeline-highlight">
+        <div class="step-icon">📦</div>
+        <div class="step-name">Auditor Pack</div>
+        <div class="step-sub">Sealed ZIP</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step pipeline-highlight">
+        <div class="step-icon">🔍</div>
+        <div class="step-name">Verify</div>
+        <div class="step-sub">Offline CLI</div>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step pipeline-highlight">
+        <div class="step-icon">⚡</div>
+        <div class="step-name">DBL Judgment</div>
+        <div class="step-sub">Blame assigned</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUILT ON ACTIS -->
+<section class="pipeline" style="padding-top: 0;">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Built on ACTIS</div>
+      <h2>Pact adds the evidence layer</h2>
+      <p style="color: var(--muted); margin-top: 12px; font-size: 0.95rem; max-width: 560px; margin-left: auto; margin-right: auto;">Pact is an open layer on the <a href="https://actis.world" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: underline; text-underline-offset: 3px;">ACTIS standard</a>. On top of ACTIS, Pact gives you:</p>
+    </div>
+    <ul style="list-style: none; max-width: 560px; margin: 0 auto; padding: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.8;">
+      <li style="padding-left: 1.5rem; position: relative;"><span style="position: absolute; left: 0; color: var(--accent);">✓</span> Evidence bundles (sealed ZIP, auditor pack) — portable, verifiable offline</li>
+      <li style="padding-left: 1.5rem; position: relative;"><span style="position: absolute; left: 0; color: var(--accent);">✓</span> Offline verifier CLI and Evidence Viewer — no network, no vendor lock-in</li>
+      <li style="padding-left: 1.5rem; position: relative;"><span style="position: absolute; left: 0; color: var(--accent);">✓</span> Insurer-grade summaries and GC-ready PDF export</li>
+      <li style="padding-left: 1.5rem; position: relative;"><span style="position: absolute; left: 0; color: var(--accent);">✓</span> Default Blame Logic (DBL) — deterministic responsibility attribution</li>
+      <li style="padding-left: 1.5rem; position: relative;"><span style="position: absolute; left: 0; color: var(--accent);">✓</span> Settlement integration (e.g. Noble) with memo and hash binding</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ARTIFACTS -->
+<section class="artifacts" id="artifacts">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Proof artifacts</div>
+      <h2>What you get</h2>
+    </div>
+    <div class="artifact-grid">
+      <div class="artifact-card">
+        <div class="artifact-icon">📦</div>
+        <h4>Auditor Pack</h4>
+        <p>Sealed ZIP. Transcript, verification report, settlement records. Portable forever.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">🖥️</div>
+        <h4>Offline Verifier</h4>
+        <p>CLI. Hash chain, signatures, constitution compliance, replay determinism. No network.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">👁️</div>
+        <h4>Evidence Viewer</h4>
+        <p>Local drag-drop UI. Verdict, timeline, DBL panel. No server required.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">⚡</div>
+        <h4>DBL Judgment</h4>
+        <p>Signed responsibility attribution. <code style="font-family:'JetBrains Mono',monospace;font-size:0.78em;color:var(--accent)">NO_FAULT</code> or <code style="font-family:'JetBrains Mono',monospace;font-size:0.78em;color:var(--danger)">RESPONSIBLE_ACTOR</code>.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">📄</div>
+        <h4>GC Export</h4>
+        <p>PDF formatted for legal review. Signed, timestamped, ready for counsel.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">🏦</div>
+        <h4>Insurer Summary</h4>
+        <p>Audit-grade report formatted for claims and underwriting review.</p>
+      </div>
+      <div class="artifact-card">
+        <div class="artifact-icon">🛂</div>
+        <h4>Passport</h4>
+        <p>Identity and credential state across deals. Snapshot per pack; delta for multi-deal audit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY PACT -->
+<section class="why">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Why Pact</div>
+      <h2>Three things no one else does</h2>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-number">01</div>
+        <h3>Evidence, not logs</h3>
+        <p>Sealed, replayable evidence bundles — not dashboards. Independently verifiable years later, without trusting the operator.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-number">02</div>
+        <h3>Blame without arbitration</h3>
+        <p>Default Blame Logic assigns responsibility deterministically. No human review loop, no subjective interpretation.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-number">03</div>
+        <h3>Verifier-first trust</h3>
+        <p>Trust lives in the verifier, not the vendor. Every artifact validates offline — no network, no proprietary services.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PILLARS: Rail agnostic, one side, neutral, reputation -->
+<section class="pillars" id="pillars">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">How Pact fits</div>
+      <h2>Rail agnostic. One side enough. Neutral. Reputation.</h2>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar-card">
+        <h3>Rail agnostic</h3>
+        <p>Works on any settlement layer: stablecoins, traditional payments, blockchains, internal ledgers, bank transfers, or API credit systems.</p>
+      </div>
+      <div class="pillar-card">
+        <h3>Works with only one side onboarded</h3>
+        <p>One party can generate Pact evidence even if the counterparty doesn't run Pact, doesn't know about Pact, or uses a normal API.</p>
+      </div>
+      <div class="pillar-card">
+        <h3>Neutral evidence layer</h3>
+        <p>Pact sits above transactions, recording what happened. It's not a marketplace or protocol — just an integrity layer.</p>
+      </div>
+      <div class="pillar-card">
+        <h3>Builds agent reputation over time</h3>
+        <p>Works across agent↔agent, agent↔API, agent↔human, and enterprise automation. Evidence aggregates into verifiable agent history passport.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="usecases">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Canonical use case</div>
+      <h2>Autonomous API procurement</h2>
+      <p>Buyer agent acquires a capability from Provider agent. Example outcomes:</p>
+    </div>
+    <div class="usecase-grid">
+      <div class="usecase-card uc-success">
+        <span class="usecase-tag tag-success">PACT-000 · Success</span>
+        <h4>Settlement completes</h4>
+        <p>Signed transcript, verification PASS, settlement confirmation. Full evidence bundle generated.</p>
+        <div class="dbl-label">DBL Judgment</div>
+        <div class="dbl-value dbl-nofault">NO_FAULT</div>
+      </div>
+      <div class="usecase-card uc-abort">
+        <span class="usecase-tag tag-abort">PACT-101 · Policy abort</span>
+        <h4>Provider violates policy</h4>
+        <p>Price or rate limit breach detected. Negotiation aborts before settlement. Evidence captures violation.</p>
+        <div class="dbl-label">DBL Judgment</div>
+        <div class="dbl-value dbl-responsible">RESPONSIBLE_ACTOR: provider</div>
+      </div>
+      <div class="usecase-card uc-timeout">
+        <span class="usecase-tag tag-timeout">PACT-404 · Timeout</span>
+        <h4>Provider misses deadline</h4>
+        <p>Settlement attempt recorded. Failure event sealed in pack. Delivery SLA breach documented.</p>
+        <div class="dbl-label">DBL Judgment</div>
+        <div class="dbl-value dbl-responsible">RESPONSIBLE_ACTOR: provider</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICKSTART -->
+<section class="quickstart" id="quickstart">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Quickstart</div>
+      <h2>3 commands</h2>
+    </div>
+    <div class="code-block">
+      <div class="code-bar">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-label">terminal</div>
+      </div>
+      <div class="code-body">
+        <pre><span class="code-comment"># Install</span>
+<span class="code-accent">pnpm</span> install --frozen-lockfile
+
+<span class="code-comment"># Run demo + verify packs</span>
+<span class="code-blue">bash</span> demo/h5-golden/run_all.sh
+<span class="code-blue">bash</span> design_partner_bundle/verify_all.sh
+
+<span class="code-comment"># Open Evidence Viewer (local)</span>
+<span class="code-accent">pnpm</span> --filter @pact/evidence-viewer dev</pre>
+      </div>
+    </div>
+    <a href="https://github.com/pact-protocol" target="_blank" class="code-link">Full docs and verifier commands on GitHub →</a>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section class="partners" id="partners">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">Partners</div>
+      <h2>Who builds with Pact</h2>
+      <p>Pact is an open layer on the ACTIS standard. It sits above any rail, platform, or runtime.</p>
+    </div>
+    <div class="partner-types">
+      <div class="partner-card">
+        <div class="partner-icon">🔌</div>
+        <h4>Payment Rails & Escrow</h4>
+        <p>Wrap your settlement layer with Pact evidence generation. Every transaction becomes independently auditable — without changing your core flow.</p>
+      </div>
+      <div class="partner-card">
+        <div class="partner-icon">🤖</div>
+        <h4>Agent Platforms & SDKs</h4>
+        <p>Integrate the Pact runtime SDK so agents you host emit signed transcripts natively. Accountability ships as a feature, not an afterthought.</p>
+      </div>
+      <div class="partner-card">
+        <div class="partner-icon">🏦</div>
+        <h4>Insurers & Underwriters</h4>
+        <p>Pact produces insurer-grade evidence summaries out of the box. Build AI transaction policies on top of verifiable, tamper-evident data.</p>
+      </div>
+      <div class="partner-card">
+        <div class="partner-icon">⚖️</div>
+        <h4>Legal & Risk Teams</h4>
+        <p>Consume GC-ready PDFs and signed judgment records directly. Disputes resolved from evidence, not hearsay.</p>
+      </div>
+      <div class="partner-card">
+        <div class="partner-icon">🏗️</div>
+        <h4>Infrastructure Providers</h4>
+        <p>Offer Pact-verified execution environments as a premium tier. Give enterprise customers the accountability layer they need to deploy autonomous agents.</p>
+      </div>
+      <div class="partner-card">
+        <div class="partner-icon">🔬</div>
+        <h4>Research & Standards</h4>
+        <p>Pact builds on the open ACTIS standard. Academic institutions and standards bodies are welcome to build on, audit, and extend both.</p>
+      </div>
+    </div>
+
+    <div class="partner-cta-block">
+      <div class="partner-cta-inner">
+        <div class="partner-cta-left">
+          <div class="section-label" style="text-align:left; margin-bottom: 10px;">Become a Design Partner</div>
+          <h3>Build the accountability layer<br>for autonomous systems.</h3>
+          <p>We're working with a small group of design partners to shape how Pact integrates with real-world agent infrastructure. If you're building something that requires provable accountability — reach out.</p>
+          <ul class="partner-perks">
+            <li><span>✓</span> Early access to the runtime SDK</li>
+            <li><span>✓</span> Co-develop integration patterns</li>
+            <li><span>✓</span> Listed as a founding partner</li>
+            <li><span>✓</span> Direct line to the core team</li>
+          </ul>
+        </div>
+        <div class="partner-cta-right">
+          <form class="partner-form" onsubmit="this.innerHTML='<p style=\'color:var(--accent);font-weight:600;text-align:center;padding:32px 0;\'>✓ We\'ll be in touch.</p>'; return false;">
+            <div class="pf-group">
+              <input type="text" placeholder="Name" required />
+            </div>
+            <div class="pf-group">
+              <input type="email" placeholder="Work email" required />
+            </div>
+            <div class="pf-group">
+              <input type="text" placeholder="Company / project" />
+            </div>
+            <div class="pf-group">
+              <select>
+                <option value="" disabled selected>Partner type</option>
+                <option>Payment Rail / Escrow</option>
+                <option>Agent Platform / SDK</option>
+                <option>Insurance / Underwriting</option>
+                <option>Legal / Risk</option>
+                <option>Infrastructure</option>
+                <option>Research / Standards</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="pf-group">
+              <textarea placeholder="What are you building?" rows="3"></textarea>
+            </div>
+            <button type="submit">Apply to Partner →</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2>If an agent can spend money,<br>it needs Pact.</h2>
+    <p>Open protocol. Verifier-first. Offline-capable.</p>
+    <div class="cta-actions">
+      <a href="https://github.com/pact-protocol" target="_blank" class="btn-primary">View on GitHub</a>
+      <a href="https://github.com/pact-protocol/pact-protocol/blob/main/docs" target="_blank" class="btn-ghost">Read the docs</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-copy">© 2026 Pact Protocol · Evidence for agent transactions</div>
+      <div class="footer-links">
+        <a href="mailto:sean@dao5.com">sean@dao5.com</a>
+        <a href="https://github.com/pact-protocol" target="_blank">GitHub</a>
+        <a href="https://github.com/pact-protocol/pact-protocol/blob/main/docs" target="_blank">Docs</a>
+        <a href="https://pactprotocol.com/partners.html" target="_blank">Partners</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
